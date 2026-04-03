@@ -1,26 +1,81 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-primary: #7c3aed;
+  --color-primary-light: #a78bfa;
+  --color-primary-dark: #5b21b6;
+  --color-accent: #06b6d4;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --bg: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --fg: #0f172a;
+  --fg-secondary: #475569;
+  --fg-muted: #94a3b8;
+  --border: #e2e8f0;
+  --border-hover: #cbd5e1;
+  --ring: #7c3aed;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+}
+
+.dark {
+  --bg: #0b1121;
+  --bg-secondary: #111827;
+  --bg-card: #1e293b;
+  --bg-elevated: #334155;
+  --fg: #f1f5f9;
+  --fg-secondary: #94a3b8;
+  --fg-muted: #64748b;
+  --border: #1e293b;
+  --border-hover: #334155;
+  --ring: #a78bfa;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --error: #f87171;
+}
+
+* {
+  border-color: var(--border);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
+
+/* Smooth transitions for theme changes */
+html.transitioning,
+html.transitioning *,
+html.transitioning *::before,
+html.transitioning *::after {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--fg-muted); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--fg-secondary); }
+
+/* Prose styles for markdown content */
+.lesson-content h1 { font-size: 1.75rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
+.lesson-content h2 { font-size: 1.5rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+.lesson-content h3 { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; }
+.lesson-content p { margin: 0.5rem 0; line-height: 1.75; }
+.lesson-content ul, .lesson-content ol { margin: 0.5rem 0; padding-left: 1.5rem; }
+.lesson-content li { margin: 0.25rem 0; line-height: 1.75; }
+.lesson-content code { background: var(--bg-elevated); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.9em; }
+.lesson-content pre { background: var(--bg-card); border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem; overflow-x: auto; margin: 1rem 0; }
+.lesson-content pre code { background: none; padding: 0; }
+.lesson-content blockquote { border-left: 3px solid var(--ring); padding-left: 1rem; margin: 1rem 0; color: var(--fg-secondary); }
+.lesson-content a { color: var(--ring); text-decoration: underline; }
