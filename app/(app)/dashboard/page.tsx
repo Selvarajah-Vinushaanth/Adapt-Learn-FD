@@ -355,31 +355,51 @@ export default function DashboardPage() {
           {attempts.length >= 2 && (() => {
             const sorted = [...attempts]
               .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-            const trendData = sorted.slice(-10).map((a) => {
-              const idx = sorted.indexOf(a);
-              const win = sorted.slice(Math.max(0, idx - 2), idx + 1);
+            const last10 = sorted.slice(-10);
+            const offset = sorted.length - last10.length; // so attempt # is global
+            const trendData = last10.map((a, i) => {
+              const win = last10.slice(Math.max(0, i - 2), i + 1);
               const avg = Math.round(win.reduce((s, x) => s + x.score, 0) / win.length);
-              const label = new Date(a.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-              return { label, score: Math.round(a.score), avg };
+              const date = new Date(a.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+              const quizTitle = (a as { quiz_title?: string }).quiz_title ?? "";
+              return {
+                label: `#${offset + i + 1}`,
+                date,
+                quizTitle,
+                score: Math.round(a.score),
+                avg,
+                winSize: win.length,
+              };
             });
             const overallAvg = Math.round(sorted.reduce((s, a) => s + a.score, 0) / sorted.length);
             return (
               <div className="mt-4">
                 <div className="mb-1 flex items-center justify-between">
-                  <p className="text-xs font-medium text-[var(--fg-muted)]">Score trend</p>
-                  <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold text-violet-500">avg {overallAvg}%</span>
+                  <p className="text-xs font-medium text-[var(--fg-muted)]">Score trend (last {last10.length})</p>
+                  <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold text-violet-500">overall avg {overallAvg}%</span>
                 </div>
                 <div className="h-20">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={trendData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
-                      <XAxis dataKey="label" tick={{ fill: "var(--fg-muted)", fontSize: 8 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                      <XAxis dataKey="label" tick={{ fill: "var(--fg-muted)", fontSize: 8 }} axisLine={false} tickLine={false} />
                       <YAxis domain={[0, 100]} tick={{ fill: "var(--fg-muted)", fontSize: 8 }} axisLine={false} tickLine={false} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "11px" }}
-                        formatter={(v: number, name: string) => [`${v}%`, name === "avg" ? "Rolling avg" : "Score"]}
+                        contentStyle={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "11px", padding: "6px 10px" }}
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload?.length) return null;
+                          const d = payload[0]?.payload as typeof trendData[0];
+                          return (
+                            <div style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "11px", padding: "6px 10px" }}>
+                              <p className="mb-1 font-semibold">{label} · {d.date}</p>
+                              {d.quizTitle && <p className="mb-1 max-w-[180px] truncate text-[10px] text-[var(--fg-muted)]">{d.quizTitle}</p>}
+                              <p style={{ color: "#8b5cf6" }}>Score: {d.score}%</p>
+                              <p style={{ color: "#06b6d4" }}>Rolling avg ({d.winSize}): {d.avg}%</p>
+                            </div>
+                          );
+                        }}
                       />
-                      <Line type="monotone" dataKey="score" stroke="#8b5cf6" strokeWidth={1.5} dot={{ r: 2, fill: "#8b5cf6" }} />
-                      <Line type="monotone" dataKey="avg" stroke="#06b6d4" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
+                      <Line type="monotone" dataKey="score" name="Score" stroke="#8b5cf6" strokeWidth={1.5} dot={{ r: 2, fill: "#8b5cf6" }} />
+                      <Line type="monotone" dataKey="avg" name="Rolling avg" stroke="#06b6d4" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
