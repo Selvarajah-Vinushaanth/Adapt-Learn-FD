@@ -179,7 +179,7 @@ export function Navbar() {
               </button>
 
               {practiceOpen && (
-                <div className="absolute right-0 top-10 z-50 w-80 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl">
+                <div className="fixed inset-x-3 top-20 z-50 w-auto overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl md:absolute md:inset-x-auto md:right-0 md:top-10 md:w-80">
                   <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
                     <div className="flex items-center gap-2">
                       <ClipboardList size={15} className="text-cyan-400" />
@@ -250,7 +250,7 @@ export function Navbar() {
               </button>
 
               {quizOpen && (
-                <div className="absolute right-0 top-10 z-50 w-80 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl">
+                <div className="fixed inset-x-3 top-20 z-50 w-auto overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl md:absolute md:inset-x-auto md:right-0 md:top-10 md:w-80">
                   <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
                     <div className="flex items-center gap-2">
                       <GraduationCap size={15} className="text-violet-400" />

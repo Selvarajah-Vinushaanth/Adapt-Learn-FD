@@ -23,6 +23,11 @@ function formatRelativeTime(dateStr: string) {
   return new Date(dateStr).toLocaleDateString();
 }
 
+function shortCourseTitle(title: string, max = 36) {
+  if (title.length <= max) return title;
+  return `${title.slice(0, max - 1)}...`;
+}
+
 function DeleteConfirmDialog({
   onConfirm, onCancel,
 }: { onConfirm: () => void; onCancel: () => void }) {
@@ -285,12 +290,12 @@ export default function ChatPage() {
               onChange={(e) =>
                 setSelectedCourse(e.target.value ? Number(e.target.value) : undefined)
               }
-              className="w-28 shrink-0 rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] px-2 py-1.5 text-xs outline-none focus:border-[var(--ring)] sm:w-36"
+              className="w-32 shrink-0 rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] px-2 py-1.5 text-xs outline-none focus:border-[var(--ring)] sm:w-44"
             >
               <option value="">General</option>
               {courseList.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.title}
+                  {shortCourseTitle(c.title)}
                 </option>
               ))}
             </select>
@@ -347,7 +352,7 @@ export default function ChatPage() {
                 {m.role === "user" ? <User size={16} /> : <Bot size={16} />}
               </div>
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                className={`max-w-[80%] rounded-2xl px-4 py-3 text-[11px] leading-relaxed sm:text-sm ${
                   m.role === "user"
                     ? "bg-[var(--ring)] text-white"
                     : "bg-[var(--bg-elevated)] text-[var(--fg)]"
