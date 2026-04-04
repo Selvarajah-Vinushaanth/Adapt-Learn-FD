@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import {
   Send, Loader2, Bot, User, Plus, Trash2, Clock, BookOpen, ChevronLeft, MessageSquare, AlertTriangle,
@@ -67,12 +68,16 @@ function DeleteConfirmDialog({
 }
 
 export default function ChatPage() {
+  const searchParams = useSearchParams();
+  const paramCourseId = searchParams.get("course") ? Number(searchParams.get("course")) : undefined;
+  const paramPrompt = searchParams.get("prompt") || "";
+
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(paramPrompt);
   const [sending, setSending] = useState(false);
   const [sessionId, setSessionId] = useState(genSessionId);
   const [courseList, setCourseList] = useState<CourseListItem[]>([]);
-  const [selectedCourse, setSelectedCourse] = useState<number | undefined>();
+  const [selectedCourse, setSelectedCourse] = useState<number | undefined>(paramCourseId);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);

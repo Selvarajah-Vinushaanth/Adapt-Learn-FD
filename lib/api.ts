@@ -350,6 +350,7 @@ export const leaderboard = {
 // ─── Daily Challenge ──────────────────────────────────────────
 export interface DailyChallenge {
   has_challenge: boolean;
+  completed_today?: boolean;
   is_review?: boolean;
   message: string;
   lesson_id?: number;

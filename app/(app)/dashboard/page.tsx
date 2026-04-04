@@ -8,14 +8,13 @@ import {
   TrendingUp, TrendingDown, Award, ChevronRight, Loader2,
   CheckCircle2, XCircle, ChevronDown, RotateCcw, GraduationCap,
   PartyPopper, Star, Sparkles, ClipboardList, Activity, GitBranch, PlayCircle,
-  Lightbulb, Brain, CalendarCheck,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   RadialBarChart, RadialBar, Cell,
   LineChart, Line,
 } from "recharts";
-import { dashboard, quizzes, tasks, courses as coursesApi, dailyChallenge, type Dashboard, type LearnerInsights, type QuizAttemptSummary, type QuizAttemptDetail, type TaskSubmissionSummary, type CourseListItem, type RevisionItem, type DailyChallenge } from "@/lib/api";
+import { dashboard, quizzes, tasks, courses as coursesApi, type Dashboard, type LearnerInsights, type QuizAttemptSummary, type QuizAttemptDetail, type TaskSubmissionSummary, type CourseListItem } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth-store";
 import { levelProgress, scoreColor } from "@/lib/utils";
 
@@ -37,8 +36,6 @@ export default function DashboardPage() {
   const [insights, setInsights] = useState<LearnerInsights | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(true);
   const [inProgressCourses, setInProgressCourses] = useState<CourseListItem[]>([]);
-  const [revisionsDue, setRevisionsDue] = useState<RevisionItem[]>([]);
-  const [dailyChallengeData, setDailyChallengeData] = useState<DailyChallenge | null>(null);
 
   useEffect(() => {
     dashboard
@@ -59,8 +56,6 @@ export default function DashboardPage() {
     quizzes.myAttempts().then(setAttempts).catch(() => {});
     tasks.mySubmissions().then(setSubmissions).catch(() => {});
     coursesApi.list().then((all) => setInProgressCourses(all.filter((c) => c.status === "in_progress"))).catch(() => {});
-    dashboard.revisions().then((r) => setRevisionsDue(r.filter((it) => new Date(it.next_review_date) <= new Date()))).catch(() => {});
-    dailyChallenge.today().then(setDailyChallengeData).catch(() => {});
   }, []);
 
   const toggleAttempt = async (id: number) => {
@@ -277,79 +272,6 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
-
-      {/* What's Next — smart recommendations */}
-      {(() => {
-        const actions: { icon: React.ElementType; title: string; desc: string; href: string; color: string; bg: string }[] = [];
-        if (revisionsDue.length > 0) {
-          actions.push({
-            icon: Brain,
-            title: `${revisionsDue.length} revision${revisionsDue.length > 1 ? "s" : ""} due`,
-            desc: `Review "${revisionsDue[0].concept}" and ${revisionsDue.length > 1 ? `${revisionsDue.length - 1} more` : "strengthen your memory"}`,
-            href: "/revisions",
-            color: "text-amber-500",
-            bg: "bg-amber-500/10",
-          });
-        }
-        if (dailyChallengeData?.has_challenge) {
-          actions.push({
-            icon: CalendarCheck,
-            title: "Daily Challenge available",
-            desc: dailyChallengeData.lesson_title ? `Today: ${dailyChallengeData.lesson_title}` : "Test yourself with today's challenge",
-            href: "/daily-challenge",
-            color: "text-cyan-500",
-            bg: "bg-cyan-500/10",
-          });
-        }
-        if (inProgressCourses.length > 0) {
-          const next = inProgressCourses[0];
-          actions.push({
-            icon: BookOpen,
-            title: "Continue your course",
-            desc: next.title,
-            href: next.last_lesson_id ? `/courses/${next.id}?lesson=${next.last_lesson_id}` : `/courses/${next.id}`,
-            color: "text-violet-500",
-            bg: "bg-violet-500/10",
-          });
-        }
-        if (insights && insights.areas_summary && insights.areas_summary !== "No weak areas identified yet. Keep taking quizzes!") {
-          actions.push({
-            icon: Lightbulb,
-            title: "Work on weak areas",
-            desc: insights.areas_summary.length > 80 ? insights.areas_summary.slice(0, 80) + "…" : insights.areas_summary,
-            href: "/chat",
-            color: "text-orange-500",
-            bg: "bg-orange-500/10",
-          });
-        }
-        if (actions.length === 0) return null;
-        return (
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
-            <div className="mb-3 flex items-center gap-2">
-              <Target size={18} className="text-[var(--ring)]" />
-              <h3 className="font-semibold">What&rsquo;s Next</h3>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {actions.slice(0, 4).map((a) => (
-                <Link
-                  key={a.href + a.title}
-                  href={a.href}
-                  className="group flex items-start gap-3 rounded-xl border border-[var(--border)] p-3 transition-all hover:border-[var(--ring)]/30 hover:bg-[var(--bg-elevated)]"
-                >
-                  <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${a.bg} ${a.color}`}>
-                    <a.icon size={18} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold group-hover:text-[var(--ring)] transition-colors">{a.title}</p>
-                    <p className="truncate text-xs text-[var(--fg-muted)]">{a.desc}</p>
-                  </div>
-                  <ChevronRight size={14} className="mt-1 ml-auto shrink-0 text-[var(--fg-muted)] transition-transform group-hover:translate-x-0.5" />
-                </Link>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Middle Row: Completion + AI Insights — horizontal */}
       <div className="grid gap-4 lg:grid-cols-3">
