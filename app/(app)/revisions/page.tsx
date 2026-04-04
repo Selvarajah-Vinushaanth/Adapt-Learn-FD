@@ -105,6 +105,20 @@ export default function RevisionsPage() {
                       <p className="text-xs text-[var(--fg-muted)]">
                         Repetition #{item.repetitions} · Interval: {item.interval_days}d
                       </p>
+                      {/* Mastery indicator */}
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[var(--bg-elevated)]">
+                          <div
+                            className={`h-full rounded-full transition-all ${
+                              item.interval_days >= 30 ? "bg-emerald-500" : item.interval_days >= 7 ? "bg-blue-500" : "bg-amber-500"
+                            }`}
+                            style={{ width: `${Math.min(100, Math.round((item.interval_days / 30) * 100))}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-[var(--fg-muted)]">
+                          {item.interval_days >= 30 ? "Mastered" : item.interval_days >= 7 ? "Learning" : "New"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <button
@@ -125,17 +139,18 @@ export default function RevisionsPage() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {[
-                        { q: 0, label: "Forgot", color: "bg-red-500/10 text-red-500 border-red-500/30" },
-                        { q: 1, label: "Barely", color: "bg-orange-500/10 text-orange-500 border-orange-500/30" },
-                        { q: 2, label: "Hard", color: "bg-amber-500/10 text-amber-500 border-amber-500/30" },
-                        { q: 3, label: "Okay", color: "bg-blue-500/10 text-blue-500 border-blue-500/30" },
-                        { q: 4, label: "Good", color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30" },
-                        { q: 5, label: "Perfect", color: "bg-green-500/10 text-green-500 border-green-500/30" },
+                        { q: 0, label: "Forgot", color: "bg-red-500/10 text-red-500 border-red-500/30", tip: "Complete blackout — resets interval to 1 day" },
+                        { q: 1, label: "Barely", color: "bg-orange-500/10 text-orange-500 border-orange-500/30", tip: "Recognized it but couldn't recall — short interval" },
+                        { q: 2, label: "Hard", color: "bg-amber-500/10 text-amber-500 border-amber-500/30", tip: "Recalled with significant effort — slight interval increase" },
+                        { q: 3, label: "Okay", color: "bg-blue-500/10 text-blue-500 border-blue-500/30", tip: "Recalled after some thought — moderate interval increase" },
+                        { q: 4, label: "Good", color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30", tip: "Recalled with minor hesitation — good interval increase" },
+                        { q: 5, label: "Perfect", color: "bg-green-500/10 text-green-500 border-green-500/30", tip: "Instant, effortless recall — large interval increase" },
                       ].map((opt) => (
                         <button
                           key={opt.q}
                           onClick={() => review(item.id, opt.q)}
                           disabled={reviewing === item.id}
+                          title={opt.tip}
                           className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${opt.color} disabled:opacity-50`}
                         >
                           {reviewing === item.id ? (
@@ -181,7 +196,17 @@ export default function RevisionsPage() {
                     </p>
                   </div>
                 </div>
-                <span className="text-xs text-[var(--fg-muted)]">{item.interval_days}d interval</span>
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-16 overflow-hidden rounded-full bg-[var(--bg-elevated)]">
+                    <div
+                      className={`h-full rounded-full ${
+                        item.interval_days >= 30 ? "bg-emerald-500" : item.interval_days >= 7 ? "bg-blue-500" : "bg-amber-500"
+                      }`}
+                      style={{ width: `${Math.min(100, Math.round((item.interval_days / 30) * 100))}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-[var(--fg-muted)]">{item.interval_days}d</span>
+                </div>
               </div>
             ))}
           </div>

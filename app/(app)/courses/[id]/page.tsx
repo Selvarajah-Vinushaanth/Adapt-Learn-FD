@@ -766,6 +766,34 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                   </span>
                 )}
               </div>
+              {/* Lesson progress breadcrumb */}
+              {(() => {
+                const mod = course?.modules
+                  ?.sort((a, b) => a.order - b.order)
+                  .find((m) => m.id === activeLesson.module_id);
+                if (!mod) return null;
+                const sortedLessons = [...(mod.lessons || [])].sort((a, b) => a.order - b.order);
+                const idx = sortedLessons.findIndex((l) => l.id === activeLesson.id);
+                const total = sortedLessons.length;
+                const completedInModule = sortedLessons.filter((l) => completedLessonIds.has(l.id)).length;
+                return (
+                  <div className="mb-4 flex items-center gap-3 text-xs text-[var(--fg-muted)]">
+                    <span className="font-medium text-[var(--fg-secondary)]">{mod.title}</span>
+                    <span>·</span>
+                    <span>Lesson {idx + 1} of {total}</span>
+                    <span>·</span>
+                    <span className="flex items-center gap-1.5">
+                      <span>{completedInModule}/{total} done</span>
+                      <span className="inline-block h-1.5 w-16 overflow-hidden rounded-full bg-[var(--bg-elevated)]">
+                        <span
+                          className="block h-full rounded-full bg-emerald-500 transition-all"
+                          style={{ width: `${total > 0 ? (completedInModule / total) * 100 : 0}%` }}
+                        />
+                      </span>
+                    </span>
+                  </div>
+                );
+              })()}
 
               {/* Tabs */}
               <div className="mb-4 flex gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] p-1">

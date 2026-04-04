@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft, Loader2, CheckCircle2, XCircle, ArrowRight,
-  Trophy, Zap, AlertTriangle, Clock, RotateCcw, BookOpen,
+  Trophy, Zap, AlertTriangle, Clock, RotateCcw, BookOpen, Lightbulb,
 } from "lucide-react";
 import { quizzes, courses, type Quiz, type QuizResult } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth-store";
@@ -30,6 +30,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
   const [elapsed, setElapsed] = useState(0);
   const [retakeLoading, setRetakeLoading] = useState(false);
   const [nextLesson, setNextLesson] = useState<{ id: number; title: string; moduleId: number } | null>(null);
+  const [hintsUsed, setHintsUsed] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (result) return;
@@ -345,6 +346,25 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
               );
             })}
           </div>
+          {/* Hint */}
+          {q.hint && (
+            <div className="mt-4">
+              {hintsUsed.has(q.id) ? (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2.5">
+                  <Lightbulb size={15} className="mt-0.5 shrink-0 text-amber-500" />
+                  <p className="text-sm text-[var(--fg-secondary)]">{q.hint}</p>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setHintsUsed((prev) => new Set(prev).add(q.id))}
+                  className="flex items-center gap-1.5 text-sm font-medium text-amber-500 hover:underline"
+                >
+                  <Lightbulb size={14} />
+                  Show Hint
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 

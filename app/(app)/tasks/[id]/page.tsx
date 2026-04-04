@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import {
   ArrowLeft, Loader2, Send, CheckCircle2, Lightbulb,
-  Tag, Zap, TrendingUp, TrendingDown, FileText, ArrowRight, BookOpen,
+  Tag, Zap, TrendingUp, TrendingDown, FileText, ArrowRight, BookOpen, RotateCcw,
 } from "lucide-react";
 import { tasks, courses, type Task, type TaskEvaluation, type Course } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth-store";
@@ -27,6 +27,7 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
   const [result, setResult] = useState<TaskEvaluation | null>(null);
   const [showHints, setShowHints] = useState(false);
   const [nextLesson, setNextLesson] = useState<{ id: number; title: string; sameModule: boolean } | null>(null);
+  const [previousResults, setPreviousResults] = useState<TaskEvaluation[]>([]);
 
   useEffect(() => {
     tasks
@@ -213,6 +214,16 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
               <ArrowLeft size={16} />
               Back to Course
             </Link>
+            <button
+              onClick={() => {
+                setPreviousResults((prev) => [...prev, result!]);
+                setResult(null);
+              }}
+              className="flex items-center gap-2 rounded-lg border border-[var(--border)] px-4 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--bg-elevated)]"
+            >
+              <RotateCcw size={16} />
+              Try Again
+            </button>
             {!courseId && (
               <Link
                 href="/dashboard"
@@ -263,7 +274,24 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
           )}
         </div>
       ) : (
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6">
+        <div className="space-y-4">
+          {/* Previous attempt summary */}
+          {previousResults.length > 0 && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+              <p className="mb-2 text-sm font-semibold text-amber-500">Previous Attempt{previousResults.length > 1 ? "s" : ""}</p>
+              <div className="space-y-1.5">
+                {previousResults.map((prev, i) => (
+                  <div key={i} className="flex items-center gap-3 text-sm">
+                    <span className={`font-bold ${scoreColor(prev.score)}`}>{Math.round(prev.score)}%</span>
+                    {prev.improvements?.length > 0 && (
+                      <span className="truncate text-xs text-[var(--fg-muted)]">Improve: {prev.improvements[0]}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6">
           <h2 className="mb-3 font-semibold">Your Submission</h2>
           <textarea
             value={submission}
@@ -294,6 +322,7 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
               )}
             </button>
           </div>
+        </div>
         </div>
       )}
     </div>

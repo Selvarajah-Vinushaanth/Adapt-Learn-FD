@@ -4,8 +4,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import {
   Send, Loader2, Bot, User, Plus, Trash2, Clock, BookOpen, ChevronLeft, MessageSquare, AlertTriangle,
+  Sparkles,
 } from "lucide-react";
-import { chat, courses, type ChatHistoryItem, type ChatSession, type CourseListItem } from "@/lib/api";
+import { chat, courses, dashboard as dashboardApi, type ChatHistoryItem, type ChatSession, type CourseListItem, type LearnerInsights } from "@/lib/api";
 
 function genSessionId() {
   return "s_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -78,6 +79,7 @@ export default function ChatPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [insights, setInsights] = useState<LearnerInsights | null>(null);
 
   const loadSessions = useCallback(async () => {
     try {
@@ -93,6 +95,7 @@ export default function ChatPage() {
   useEffect(() => {
     courses.list().then(setCourseList).catch(() => {});
     loadSessions();
+    dashboardApi.insights().then(setInsights).catch(() => {});
   }, [loadSessions]);
 
   useEffect(() => {
@@ -323,20 +326,34 @@ export default function ChatPage() {
                 {selectedCourse ? " I'll use your course context for better answers." : ""}
               </p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {[
-                  "Explain this concept simply",
-                  "Give me practice problems",
-                  "What should I learn next?",
-                  "Summarize the key points",
-                ].map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setInput(s)}
-                    className="rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-1.5 text-xs transition-colors hover:border-[var(--ring)]/30"
-                  >
-                    {s}
-                  </button>
-                ))}
+                {(() => {
+                  const selectedCourseObj = courseList.find((c) => c.id === selectedCourse);
+                  const prompts: string[] = [];
+                  if (selectedCourseObj) {
+                    prompts.push(`Explain the key concepts of ${selectedCourseObj.title}`);
+                    prompts.push(`Give me practice problems for ${selectedCourseObj.title}`);
+                    prompts.push(`What are common mistakes in ${selectedCourseObj.topic}?`);
+                    prompts.push(`Summarize what I've learned so far`);
+                  } else {
+                    if (insights?.areas_summary && !insights.areas_summary.includes("No weak areas")) {
+                      const area = insights.areas_summary.split(".")[0];
+                      if (area.length < 80) prompts.push(`Help me understand: ${area}`);
+                    }
+                    prompts.push("Explain this concept simply");
+                    prompts.push("Give me practice problems");
+                    if (prompts.length < 4) prompts.push("What should I learn next?");
+                    if (prompts.length < 4) prompts.push("Summarize the key points");
+                  }
+                  return prompts.slice(0, 4).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setInput(s)}
+                      className="rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-1.5 text-xs transition-colors hover:border-[var(--ring)]/30"
+                    >
+                      {s}
+                    </button>
+                  ));
+                })()}
               </div>
             </div>
           )}

@@ -183,6 +183,7 @@ export interface QuizQuestion {
   question_text: string;
   options: { label: string; text: string }[];
   difficulty: string;
+  hint?: string;
   order: number;
 }
 
