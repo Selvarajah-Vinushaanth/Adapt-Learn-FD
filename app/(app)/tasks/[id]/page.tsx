@@ -9,6 +9,7 @@ import {
   Tag, Zap, TrendingUp, TrendingDown, FileText, ArrowRight, BookOpen,
 } from "lucide-react";
 import { tasks, courses, type Task, type TaskEvaluation, type Course } from "@/lib/api";
+import { useAuthStore } from "@/lib/auth-store";
 import { difficultyColor, scoreColor } from "@/lib/utils";
 
 export default function TaskPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,6 +19,7 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
   const courseId = searchParams.get("courseId") ? Number(searchParams.get("courseId")) : null;
   const lessonId = searchParams.get("lessonId") ? Number(searchParams.get("lessonId")) : null;
 
+  const { user, updateUser } = useAuthStore();
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   const [submission, setSubmission] = useState("");
@@ -40,6 +42,8 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
     try {
       const res = await tasks.evaluate(taskId, submission.trim());
       setResult(res);
+      // Update XP in navbar immediately so users see the change here, not on the next page
+      updateUser({ xp: (user?.xp ?? 0) + (res.xp_earned ?? 0) });
       // Fetch next lesson if we came from a course
       if (courseId && lessonId) {
         courses.get(courseId).then((course: Course) => {

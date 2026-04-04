@@ -8,6 +8,7 @@ import {
   Trophy, Zap, AlertTriangle, Clock, RotateCcw, BookOpen,
 } from "lucide-react";
 import { quizzes, courses, type Quiz, type QuizResult } from "@/lib/api";
+import { useAuthStore } from "@/lib/auth-store";
 import { scoreColor } from "@/lib/utils";
 
 export default function QuizPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,6 +19,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
   const courseId = searchParams.get("courseId") ? Number(searchParams.get("courseId")) : null;
   const lessonId = searchParams.get("lessonId") ? Number(searchParams.get("lessonId")) : null;
 
+  const { user, updateUser } = useAuthStore();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [current, setCurrent] = useState(0);
@@ -58,6 +60,9 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
       }));
       const res = await quizzes.submit(quizId, formatted, timeSpent);
       setResult(res);
+      // Update XP in navbar immediately so users see the change here, not on the next page
+      const achievementXp = (res.new_achievements ?? []).reduce((sum: number, a: { xp_reward?: number }) => sum + (a.xp_reward ?? 0), 0);
+      updateUser({ xp: (user?.xp ?? 0) + (res.xp_earned ?? 0) + achievementXp });
       // Fetch next lesson if we came from a course
       if (courseId && lessonId) {
         Promise.all([

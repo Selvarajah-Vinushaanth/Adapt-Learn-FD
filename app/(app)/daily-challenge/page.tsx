@@ -11,6 +11,7 @@ import {
   type DailyChallengeStart,
   type QuizResult,
 } from "@/lib/api";
+import { useAuthStore } from "@/lib/auth-store";
 
 interface Answer {
   question_id: number;
@@ -20,6 +21,7 @@ interface Answer {
 type Stage = "loading" | "no_enrollment" | "active" | "submitting" | "results" | "completed";
 
 export default function DailyChallengePage() {
+  const { user, updateUser } = useAuthStore();
   const [stage, setStage] = useState<Stage>("loading");
   const [data, setData] = useState<DailyChallengeStart | null>(null);
   const [currentQ, setCurrentQ] = useState(0);
@@ -81,6 +83,9 @@ export default function DailyChallengePage() {
     try {
       const res = await dailyChallenge.submit(data!.quiz_id!, answers, timeSpent);
       setResult(res);
+      // Update XP in navbar immediately
+      const achievementXp = (res.new_achievements ?? []).reduce((sum: number, a: { xp_reward?: number }) => sum + (a.xp_reward ?? 0), 0);
+      updateUser({ xp: (user?.xp ?? 0) + (res.xp_earned ?? 0) + achievementXp });
       setStage("results");
     } catch {
       setStage("active");
