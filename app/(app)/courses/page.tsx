@@ -18,6 +18,7 @@ export default function CoursesPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState("beginner");
+  const [depth, setDepth] = useState("standard");
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [filterDiff, setFilterDiff] = useState("all");
@@ -38,7 +39,7 @@ export default function CoursesPage() {
     setGenerating(true);
     setError("");
     try {
-      const course = await courses.generate(topic.trim(), difficulty);
+      const course = await courses.generate(topic.trim(), difficulty, depth);
       router.push(`/courses/${course.id}`);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to generate course");
@@ -117,6 +118,15 @@ export default function CoursesPage() {
                 <option value="intermediate">Intermediate</option>
                 <option value="advanced">Advanced</option>
               </select>
+              <select
+                value={depth}
+                onChange={(e) => setDepth(e.target.value)}
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] px-4 py-2.5 text-sm outline-none focus:border-[var(--ring)]"
+              >
+                <option value="quick">Quick (5 modules · 2-3 lessons each)</option>
+                <option value="standard">Standard (10 modules · 3-5 lessons each)</option>
+                <option value="comprehensive">Comprehensive (15 modules · 4-6 lessons each)</option>
+              </select>
               {error && (
                 <p className="text-sm text-[var(--error)]">{error}</p>
               )}
@@ -149,7 +159,11 @@ export default function CoursesPage() {
             </div>
             {generating && (
               <p className="mt-3 text-center text-xs text-[var(--fg-muted)]">
-                This may take 30-60 seconds while the AI creates your course...
+                {depth === "comprehensive"
+                  ? "Generating a 15-module course — this may take 60-90 seconds…"
+                  : depth === "standard"
+                  ? "Generating a 10-module course — this may take 45-75 seconds…"
+                  : "Generating your course — this may take 30-60 seconds…"}
               </p>
             )}
           </div>

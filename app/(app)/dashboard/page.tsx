@@ -7,7 +7,7 @@ import {
   Zap, Trophy, Flame, Clock, BookOpen, Target,
   TrendingUp, TrendingDown, Award, ChevronRight, Loader2,
   CheckCircle2, XCircle, ChevronDown, RotateCcw, GraduationCap,
-  PartyPopper, Star, Sparkles, ClipboardList,
+  PartyPopper, Star, Sparkles, ClipboardList, Activity,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -544,6 +544,52 @@ export default function DashboardPage() {
           <ChevronRight size={18} className="text-[var(--fg-muted)] transition-transform group-hover:translate-x-1" />
         </Link>
       </div>
+
+      {/* Recent Activity */}
+      {data.recent_activity?.length > 0 && (
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <Activity size={20} className="text-[var(--ring)]" />
+            <h3 className="font-semibold">Recent Activity</h3>
+            <span className="ml-auto text-xs text-[var(--fg-muted)]">Last {data.recent_activity.length} events</span>
+          </div>
+          <div className="space-y-2">
+            {data.recent_activity.map((item, i) => {
+              const isQuiz = item.type === "quiz";
+              const scoreClass = item.score >= 80 ? "text-emerald-500" : item.score >= 60 ? "text-amber-500" : "text-red-500";
+              const scoreBg = item.score >= 80 ? "bg-emerald-500/10" : item.score >= 60 ? "bg-amber-500/10" : "bg-red-500/10";
+              return (
+                <div key={i} className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2.5">
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${scoreBg}`}>
+                    {isQuiz ? (
+                      <span className={`text-xs font-bold ${scoreClass}`}>{Math.round(item.score)}%</span>
+                    ) : (
+                      <span className={`text-xs font-bold ${scoreClass}`}>{Math.round(item.score)}%</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{item.title}</p>
+                    {item.occurred_at && (
+                      <p className="text-xs text-[var(--fg-muted)]">
+                        {new Date(item.occurred_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    )}
+                  </div>
+                  {item.xp_earned > 0 && (
+                    <span className="shrink-0 flex items-center gap-0.5 rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-bold text-violet-500">
+                      <Zap size={9} />
+                      +{item.xp_earned}
+                    </span>
+                  )}
+                  <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-medium ${isQuiz ? "bg-blue-500/10 text-blue-400" : "bg-teal-500/10 text-teal-400"}`}>
+                    {isQuiz ? "Quiz" : "Task"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Practice Test History */}
       <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">

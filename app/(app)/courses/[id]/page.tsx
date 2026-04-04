@@ -10,9 +10,9 @@ import {
   Globe, Search, PlayCircle, Award, ShieldCheck, X, Download, Star, Target,
 } from "lucide-react";
 import {
-  courses, quizzes, tasks, resources, dashboard,
+  courses, quizzes, tasks, resources, dashboard, notes, explain,
   type Course, type AdaptiveLesson, type Quiz, type Task, type ResourceResult,
-  type CourseListItem,
+  type CourseListItem, type LessonNote, type SimplifiedExplanation,
 } from "@/lib/api";
 import { difficultyColor } from "@/lib/utils";
 
@@ -38,10 +38,18 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
   // Lesson IDs where the user has taken a quiz (for module unlocking)
   const [completedLessonIds, setCompletedLessonIds] = useState<Set<number>>(new Set());
   // Resources tab
-  const [activeTab, setActiveTab] = useState<"content" | "resources">("content");
+  const [activeTab, setActiveTab] = useState<"content" | "resources" | "notes">("content");
   const [resourceResults, setResourceResults] = useState<ResourceResult[]>([]);
   const [resourceLoading, setResourceLoading] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  // Notes
+  const [lessonNote, setLessonNote] = useState<LessonNote | null>(null);
+  const [noteText, setNoteText] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteSaved, setNoteSaved] = useState(false);
+  // Simplification (AI re-explanation)
+  const [simplifyLoading, setSimplifyLoading] = useState(false);
+  const [simplified, setSimplified] = useState<SimplifiedExplanation | null>(null);
   // Course progress & certificate
   const [courseProgress, setCourseProgress] = useState<CourseListItem | null>(null);
   const [certLoading, setCertLoading] = useState(false);
@@ -184,9 +192,18 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
     setActiveTab("content");
     setResourceResults([]);
     setSelectedVideo(null);
+    setSimplified(null);
+    setNoteSaved(false);
     try {
-      const lesson = await courses.getLesson(courseId, lessonId);
+      const [lesson, note, cached] = await Promise.all([
+        courses.getLesson(courseId, lessonId),
+        notes.getForLesson(lessonId).catch(() => null),
+        explain.getCached(courseId, lessonId).catch(() => null),
+      ]);
       setActiveLesson(lesson);
+      setLessonNote(note);
+      setNoteText(note?.content ?? "");
+      if (cached) setSimplified(cached);
     } catch {
       setError("Failed to load lesson. Please try again.");
     }
@@ -201,6 +218,35 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
       setResourceResults(data);
     } catch {}
     setResourceLoading(false);
+  };
+
+  const saveNote = async () => {
+    if (!activeLesson) return;
+    setNoteSaving(true);
+    try {
+      const saved = await notes.saveForLesson(activeLesson.id, noteText);
+      setLessonNote(saved);
+      setNoteSaved(true);
+      setTimeout(() => setNoteSaved(false), 2000);
+    } catch {}
+    setNoteSaving(false);
+  };
+
+  const deleteNote = async () => {
+    if (!lessonNote) return;
+    await notes.deleteNote(lessonNote.id).catch(() => null);
+    setLessonNote(null);
+    setNoteText("");
+  };
+
+  const simplifyLesson = async () => {
+    if (!activeLesson) return;
+    setSimplifyLoading(true);
+    try {
+      const result = await explain.generate(courseId, activeLesson.id);
+      setSimplified(result);
+    } catch {}
+    setSimplifyLoading(false);
   };
 
   const generateQuiz = async (lessonId: number) => {
@@ -284,11 +330,11 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
   const sortedModules = [...(course.modules || [])].sort((a, b) => a.order - b.order);
 
   return (
-    <div className="w-full px-4 py-6 sm:px-6">
+    <div className="w-full px-4 py-4 sm:px-6 lg:flex lg:h-[calc(100vh-4rem)] lg:flex-col lg:overflow-hidden">
 
       {/* Daily challenge review banner */}
       {reviewMode && (
-        <div className="mb-4 flex items-center justify-between rounded-xl border border-orange-400/30 bg-orange-500/5 px-4 py-2.5">
+        <div className="mb-3 flex items-center justify-between rounded-xl border border-orange-400/30 bg-orange-500/5 px-4 py-2.5 lg:shrink-0">
           <div className="flex items-center gap-2 text-sm text-orange-400">
             <Target size={15} className="shrink-0" />
             <span>Reviewing lesson for today&apos;s daily challenge. Pick a lesson from the modules below.</span>
@@ -491,14 +537,14 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
       )}
 
       {/* Back */}
-      <Link href="/courses" className="mb-4 inline-flex items-center gap-1 text-sm text-[var(--fg-secondary)] hover:text-[var(--fg)]">
+      <Link href="/courses" className="mb-3 inline-flex items-center gap-1 text-sm text-[var(--fg-secondary)] hover:text-[var(--fg)] lg:shrink-0">
         <ArrowLeft size={16} />
         All Courses
       </Link>
 
       {/* Error Banner */}
       {error && (
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-500">
+        <div className="mb-3 flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-500 lg:shrink-0">
           <AlertCircle size={16} className="shrink-0" />
           <span>{error}</span>
           <button onClick={() => setError(null)} className="ml-auto text-xs underline">Dismiss</button>
@@ -506,7 +552,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
       )}
 
       {/* Course Header */}
-      <div className="mb-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6">
+      <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5 lg:shrink-0">
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${dc}`}>
             {course.difficulty}
@@ -628,9 +674,9 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
         )}
       </div>
 
-      <div className="lg:grid lg:gap-6 lg:grid-cols-[1fr_1.5fr]">
+      <div className="lg:flex-1 lg:min-h-0 lg:grid lg:gap-6 lg:grid-cols-[1fr_1.5fr] lg:overflow-hidden">
         {/* Module sidebar — hidden on mobile when a lesson is active */}
-        <div className={`space-y-2 ${activeLesson ? "hidden lg:block" : ""}`}>
+        <div className={`space-y-2 pb-4 ${activeLesson ? "hidden lg:block" : ""} lg:h-full lg:overflow-y-auto lg:pr-1`}>
           <h2 className="mb-2 font-semibold text-[var(--fg-secondary)]">Modules</h2>
           {sortedModules.map((mod, modIndex) => {
             const isOpen = expandedModule === mod.id;
@@ -695,7 +741,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
         </div>
 
         {/* Lesson Content — hidden on mobile when no lesson selected; back button on mobile */}
-        <div className={`rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4 sm:p-6 ${!activeLesson ? "hidden lg:block" : ""}`}>
+        <div className={`rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4 sm:p-6 ${!activeLesson ? "hidden lg:block" : ""} lg:h-full lg:overflow-y-auto`}>
           {/* Mobile: back to modules */}
           {activeLesson && (
             <button
@@ -728,6 +774,18 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                   className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-colors ${activeTab === "content" ? "bg-[var(--bg-card)] text-[var(--fg)] shadow-sm" : "text-[var(--fg-secondary)] hover:text-[var(--fg)]"}`}
                 >
                   Content
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab("notes");
+                  }}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-sm font-medium transition-colors ${activeTab === "notes" ? "bg-[var(--bg-card)] text-[var(--fg)] shadow-sm" : "text-[var(--fg-secondary)] hover:text-[var(--fg)]"}`}
+                >
+                  <FileText size={14} />
+                  Notes
+                  {lessonNote && (
+                    <span className="ml-0.5 h-1.5 w-1.5 rounded-full bg-[var(--ring)]" />
+                  )}
                 </button>
                 <button
                   onClick={() => {
@@ -776,6 +834,65 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                       ))}
                     </div>
                   )}
+
+                  {/* AI Simplification panel */}
+                  <div className="mb-6 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-blue-400">Struggling with this lesson?</p>
+                        <p className="text-xs text-[var(--fg-secondary)]">
+                          {simplified ? "AI explanation saved — refresh anytime." : "Get a simpler AI explanation with analogies and self-check questions."}
+                        </p>
+                      </div>
+                      <button
+                        onClick={simplifyLesson}
+                        disabled={simplifyLoading}
+                        className="flex shrink-0 items-center gap-1.5 rounded-lg bg-blue-500/20 px-3 py-2 text-xs font-semibold text-blue-400 hover:bg-blue-500/30 disabled:opacity-50 transition-colors"
+                      >
+                        {simplifyLoading ? <Loader2 size={13} className="animate-spin" /> : <Brain size={13} />}
+                        {simplifyLoading ? "Generating..." : simplified ? "Regenerate" : "Simplify for me"}
+                      </button>
+                    </div>
+                    {simplified && (
+                      <div className="mt-4 space-y-4 border-t border-blue-500/20 pt-4">
+                        <div className="lesson-content text-sm">
+                          <ReactMarkdown>{simplified.simplified_explanation}</ReactMarkdown>
+                        </div>
+                        {simplified.analogy && (
+                          <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
+                            <p className="mb-1 text-xs font-semibold text-blue-400">Think of it this way...</p>
+                            <p className="text-sm text-[var(--fg-secondary)]">{simplified.analogy}</p>
+                          </div>
+                        )}
+                        {simplified.key_takeaways?.length > 0 && (
+                          <div>
+                            <p className="mb-2 text-xs font-semibold text-[var(--fg-secondary)] uppercase tracking-wide">Key Takeaways</p>
+                            <ul className="space-y-1">
+                              {simplified.key_takeaways.map((t, i) => (
+                                <li key={i} className="flex items-start gap-2 text-sm text-[var(--fg-secondary)]">
+                                  <CheckCircle2 size={13} className="mt-0.5 shrink-0 text-blue-400" />
+                                  {t}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {simplified.self_check_questions?.length > 0 && (
+                          <div>
+                            <p className="mb-2 text-xs font-semibold text-[var(--fg-secondary)] uppercase tracking-wide">Quick Self-Check</p>
+                            <div className="space-y-2">
+                              {simplified.self_check_questions.map((sq, i) => (
+                                <details key={i} className="rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)]">
+                                  <summary className="cursor-pointer px-3 py-2 text-sm font-medium">{sq.question}</summary>
+                                  <p className="border-t border-[var(--border)] px-3 py-2 text-sm text-[var(--fg-secondary)]">{sq.answer}</p>
+                                </details>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   {/* Actions — hidden in review mode (user should go back to Daily Challenge to take quiz) */}
                   {!reviewMode && (
                     <div className="flex flex-wrap gap-3 border-t border-[var(--border)] pt-4">
@@ -829,6 +946,52 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                     </div>
                   )}
                 </>
+              ) : activeTab === "notes" ? (
+                /* Notes Tab */
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-[var(--fg-secondary)]">
+                      Your notes for this lesson
+                    </p>
+                    {lessonNote && (
+                      <button
+                        onClick={deleteNote}
+                        className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 transition-colors"
+                      >
+                        <X size={12} />
+                        Clear note
+                      </button>
+                    )}
+                  </div>
+                  <textarea
+                    value={noteText}
+                    onChange={(e) => { setNoteText(e.target.value); setNoteSaved(false); }}
+                    rows={12}
+                    placeholder="Write your notes, key takeaways, or questions here…"
+                    className="w-full resize-y rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] px-4 py-3 text-sm outline-none focus:border-[var(--ring)] transition-colors"
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-[var(--fg-muted)]">
+                      {lessonNote
+                        ? `Last saved: ${new Date(lessonNote.updated_at).toLocaleString()}`
+                        : "Not saved yet"}
+                    </p>
+                    <button
+                      onClick={saveNote}
+                      disabled={noteSaving || !noteText.trim()}
+                      className="flex items-center gap-2 rounded-lg bg-[var(--ring)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+                    >
+                      {noteSaving ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : noteSaved ? (
+                        <CheckCircle2 size={14} />
+                      ) : (
+                        <FileText size={14} />
+                      )}
+                      {noteSaving ? "Saving…" : noteSaved ? "Saved!" : "Save Note"}
+                    </button>
+                  </div>
+                </div>
               ) : (
                 /* Resources Tab */
                 <div className="space-y-4">

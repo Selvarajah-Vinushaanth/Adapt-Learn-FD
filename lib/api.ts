@@ -468,7 +468,7 @@ export interface Dashboard {
   strengths: string[];
   weaknesses: string[];
   achievements: { name: string; description: string; icon: string; xp_reward: number; earned_at: string }[];
-  recent_activity: Record<string, unknown>[];
+  recent_activity: { type: string; title: string; score: number; xp_earned: number; occurred_at: string | null }[];
   skill_summary: Record<string, unknown>[];
 }
 
@@ -534,3 +534,51 @@ export const dashboard = {
 };
 
 export { ApiError };
+
+// ─── Notes ───────────────────────────────────────────────────
+export interface LessonNote {
+  id: number;
+  lesson_id: number;
+  course_id: number;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SimplifiedExplanation {
+  lesson_id: number;
+  lesson_title?: string;
+  score_context: number;
+  simplified_explanation: string;
+  key_takeaways: string[];
+  analogy: string;
+  self_check_questions: { question: string; answer: string }[];
+  cached?: boolean;
+}
+
+export const notes = {
+  getForLesson: (lessonId: number) =>
+    request<LessonNote | null>(`/notes/lesson/${lessonId}`),
+
+  saveForLesson: (lessonId: number, content: string) =>
+    request<LessonNote>(`/notes/lesson/${lessonId}`, {
+      method: "PUT",
+      body: JSON.stringify({ content }),
+    }),
+
+  deleteNote: (noteId: number) =>
+    request<void>(`/notes/${noteId}`, { method: "DELETE" }),
+
+  getCourseNotes: (courseId: number) =>
+    request<LessonNote[]>(`/notes/course/${courseId}`),
+};
+
+export const explain = {
+  getCached: (courseId: number, lessonId: number) =>
+    request<SimplifiedExplanation | null>(`/courses/${courseId}/lessons/${lessonId}/explain`),
+
+  generate: (courseId: number, lessonId: number) =>
+    request<SimplifiedExplanation>(`/courses/${courseId}/lessons/${lessonId}/explain`, {
+      method: "POST",
+    }),
+};
