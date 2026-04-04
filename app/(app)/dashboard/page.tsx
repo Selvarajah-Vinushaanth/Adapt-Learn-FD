@@ -7,14 +7,14 @@ import {
   Zap, Trophy, Flame, Clock, BookOpen, Target,
   TrendingUp, TrendingDown, Award, ChevronRight, Loader2,
   CheckCircle2, XCircle, ChevronDown, RotateCcw, GraduationCap,
-  PartyPopper, Star, Sparkles, ClipboardList, Activity,
+  PartyPopper, Star, Sparkles, ClipboardList, Activity, GitBranch, PlayCircle,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   RadialBarChart, RadialBar, Cell,
   LineChart, Line,
 } from "recharts";
-import { dashboard, quizzes, tasks, type Dashboard, type LearnerInsights, type QuizAttemptSummary, type QuizAttemptDetail, type TaskSubmissionSummary } from "@/lib/api";
+import { dashboard, quizzes, tasks, courses as coursesApi, type Dashboard, type LearnerInsights, type QuizAttemptSummary, type QuizAttemptDetail, type TaskSubmissionSummary, type CourseListItem } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth-store";
 import { levelProgress, scoreColor } from "@/lib/utils";
 
@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const [quizLimit, setQuizLimit] = useState(5);
   const [insights, setInsights] = useState<LearnerInsights | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(true);
+  const [inProgressCourses, setInProgressCourses] = useState<CourseListItem[]>([]);
 
   useEffect(() => {
     dashboard
@@ -54,6 +55,7 @@ export default function DashboardPage() {
 
     quizzes.myAttempts().then(setAttempts).catch(() => {});
     tasks.mySubmissions().then(setSubmissions).catch(() => {});
+    coursesApi.list().then((all) => setInProgressCourses(all.filter((c) => c.status === "in_progress"))).catch(() => {});
   }, []);
 
   const toggleAttempt = async (id: number) => {
@@ -512,7 +514,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link
           href="/courses"
           className="group flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 transition-all hover:border-[var(--ring)]/30"
@@ -543,7 +545,67 @@ export default function DashboardPage() {
           </div>
           <ChevronRight size={18} className="text-[var(--fg-muted)] transition-transform group-hover:translate-x-1" />
         </Link>
+        <Link
+          href="/skill-graph"
+          className="group flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 transition-all hover:border-[var(--ring)]/30"
+        >
+          <div className="flex items-center gap-3">
+            <GitBranch size={20} className="text-[var(--ring)]" />
+            <span className="font-semibold">Skill Graph</span>
+          </div>
+          <ChevronRight size={18} className="text-[var(--fg-muted)] transition-transform group-hover:translate-x-1" />
+        </Link>
       </div>
+
+      {/* Continue Learning — in-progress courses */}
+      {inProgressCourses.length > 0 && (
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <PlayCircle size={20} className="text-violet-500" />
+            <h3 className="font-semibold">Continue Learning</h3>
+            <span className="ml-auto text-xs text-[var(--fg-muted)]">{inProgressCourses.length} in progress</span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {inProgressCourses.map((c) => {
+              const href = c.last_lesson_id
+                ? `/courses/${c.id}?lesson=${c.last_lesson_id}`
+                : `/courses/${c.id}`;
+              const pct = Math.round(c.completion_percentage);
+              return (
+                <Link
+                  key={c.id}
+                  href={href}
+                  className="group flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4 transition-all hover:border-violet-500/30 hover:bg-[var(--bg-card)]"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="line-clamp-2 text-sm font-semibold leading-snug group-hover:text-violet-400 transition-colors">
+                      {c.title}
+                    </p>
+                    <ChevronRight size={15} className="mt-0.5 shrink-0 text-[var(--fg-muted)] transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs text-[var(--fg-muted)]">
+                      <span>{c.module_count} modules</span>
+                      <span className="font-semibold text-violet-400">{pct}%</span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-[var(--bg)]">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 transition-all duration-700"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                  {c.last_lesson_id && (
+                    <p className="text-[11px] text-[var(--fg-muted)]">
+                      Continue where you left off →
+                    </p>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Recent Activity */}
       {data.recent_activity?.length > 0 && (

@@ -129,6 +129,7 @@ export interface CourseListItem {
   certified: boolean;
   certified_at: string | null;
   quick_completed: boolean;
+  last_lesson_id: number | null;
 }
 
 export interface AdaptiveLesson {

@@ -231,7 +231,7 @@ export default function ChatPage() {
                         <Clock size={10} />
                         {formatRelativeTime(s.last_message_at)}
                         <span className="ml-1 rounded-full bg-[var(--border)] px-1.5 py-0.5 text-[10px]">
-                          {s.message_count} msgs
+                          {s.message_count} {s.message_count === 1 ? "question" : "questions"}
                         </span>
                       </p>
                     </div>
