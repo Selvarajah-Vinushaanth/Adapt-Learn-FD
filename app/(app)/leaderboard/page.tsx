@@ -142,7 +142,7 @@ export default function LeaderboardPage() {
                     <div className="hidden sm:block">
                       <div className="flex items-center gap-1 text-xs text-amber-500">
                         <Flame size={12} />
-                        {entry.streak_days}d
+                        {isMe && user ? user.streak_days : entry.streak_days}d
                       </div>
                     </div>
                     <div>
